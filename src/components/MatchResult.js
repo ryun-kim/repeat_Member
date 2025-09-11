@@ -1,10 +1,12 @@
 // src/components/MatchResult.js
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { db } from "../firebase";
 import { collection, getDocs, query, where, updateDoc, doc, addDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function MatchResult() {
+  const location = useLocation();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [members, setMembers] = useState([]);
@@ -43,6 +45,18 @@ function MatchResult() {
               isPast: eventDate < today // 지나간 모임인지 표시
             };
           })
+          .filter(event => {
+            const eventDate = new Date(event.date);
+            eventDate.setHours(0, 0, 0, 0);
+            
+            // 한 달 전부터 한 달 후까지의 모임만 포함
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            const oneMonthFromNow = new Date(today);
+            oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+            
+            return eventDate >= oneMonthAgo && eventDate <= oneMonthFromNow;
+          })
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         
         setEvents(eventsData);
@@ -70,6 +84,25 @@ function MatchResult() {
     };
 
     fetchMembers();
+  }, []);
+
+  // 달력에서 전달받은 이벤트 자동 선택
+  useEffect(() => {
+    if (location.state?.selectedEvent && events.length > 0) {
+      const eventFromCalendar = events.find(event => event.id === location.state.selectedEvent.id);
+      if (eventFromCalendar) {
+        handleEventSelect(eventFromCalendar);
+      }
+    }
+  }, [location.state?.selectedEvent, events]);
+
+  // 컴포넌트 언마운트 시 location state 정리
+  useEffect(() => {
+    return () => {
+      if (location.state?.selectedEvent) {
+        window.history.replaceState({}, document.title);
+      }
+    };
   }, []);
 
   // 이벤트 선택 핸들러
@@ -270,8 +303,8 @@ function MatchResult() {
             newRecentGames.unshift('L');
           }
           
-          // 최근 4경기만 유지
-          const updatedRecentGames = newRecentGames.slice(0, 4);
+          // 최근 5경기만 유지
+          const updatedRecentGames = newRecentGames.slice(0, 5);
           
           updatePromises.push(
             updateDoc(doc(db, "users", member.id), {
@@ -303,8 +336,8 @@ function MatchResult() {
             newRecentGames.unshift('L');
           }
           
-          // 최근 4경기만 유지
-          const updatedRecentGames = newRecentGames.slice(0, 4);
+          // 최근 5경기만 유지
+          const updatedRecentGames = newRecentGames.slice(0, 5);
           
           updatePromises.push(
             updateDoc(doc(db, "users", member.id), {

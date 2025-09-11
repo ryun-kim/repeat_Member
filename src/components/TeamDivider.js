@@ -1,10 +1,12 @@
 // src/components/TeamDivider.js
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { db } from "../firebase";
 import { collection, getDocs, query, where, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function TeamDivider() {
+  const location = useLocation();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [attendanceData, setAttendanceData] = useState([]);
@@ -30,14 +32,21 @@ function TeamDivider() {
           const eventDate = new Date(data.date);
           eventDate.setHours(0, 0, 0, 0); // 이벤트 날짜 00:00:00으로 설정
           
-          // 모든 모임 포함 (지나간 모임도 포함)
-          eventList.push({
-            id: doc.id,
-            title: data.title,
-            date: data.date,
-            color: data.color || "#007bff",
-            isPast: eventDate < today // 지나간 모임인지 표시
-          });
+          // 한 달 전부터 한 달 후까지의 모임만 포함
+          const oneMonthAgo = new Date(today);
+          oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+          const oneMonthFromNow = new Date(today);
+          oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+          
+          if (eventDate >= oneMonthAgo && eventDate <= oneMonthFromNow) {
+            eventList.push({
+              id: doc.id,
+              title: data.title,
+              date: data.date,
+              color: data.color || "#007bff",
+              isPast: eventDate < today // 지나간 모임인지 표시
+            });
+          }
         });
         // 날짜순으로 정렬
         eventList.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -72,6 +81,25 @@ function TeamDivider() {
     fetchMembers();
   }, []);
 
+  // 달력에서 전달받은 이벤트 자동 선택
+  useEffect(() => {
+    if (location.state?.selectedEvent && events.length > 0) {
+      const eventFromCalendar = events.find(event => event.id === location.state.selectedEvent.id);
+      if (eventFromCalendar) {
+        handleEventSelect(eventFromCalendar);
+      }
+    }
+  }, [location.state?.selectedEvent, events]);
+
+  // 컴포넌트 언마운트 시 location state 정리
+  useEffect(() => {
+    return () => {
+      if (location.state?.selectedEvent) {
+        window.history.replaceState({}, document.title);
+      }
+    };
+  }, []);
+
   // 선택된 이벤트의 참석 데이터 가져오기
   useEffect(() => {
     if (selectedEvent) {
@@ -100,6 +128,27 @@ function TeamDivider() {
       fetchAttendance();
     }
   }, [selectedEvent]);
+
+  // 포지션 색깔 함수들
+  const getPositionColor = (position) => {
+    switch (position) {
+      case "가드": return "bg-success";
+      case "포워드": return "bg-primary";
+      case "센터": return "bg-danger";
+      default: return "bg-secondary";
+    }
+  };
+
+  const getDetailPositionColor = (detailPosition) => {
+    switch (detailPosition) {
+      case "PG": return "bg-success";
+      case "SG": return "bg-warning";
+      case "SF": return "bg-primary";
+      case "PF": return "bg-purple";
+      case "C": return "bg-danger";
+      default: return "bg-secondary";
+    }
+  };
 
   // 팀 나누기 함수
   const shuffleArray = (array) => {
@@ -138,9 +187,9 @@ function TeamDivider() {
     };
 
     // 각 포지션별로 팀 나누기
-    const teamA = [];
-    const teamB = [];
-    const teamC = [];
+    let teamA = [];
+    let teamB = [];
+    let teamC = [];
 
     Object.keys(positionGroups).forEach(position => {
       const players = positionGroups[position];
@@ -163,6 +212,49 @@ function TeamDivider() {
         teamC.push(...shuffled.slice(twoThirdPoint));
       }
     });
+
+    // 팀 인원 균형 조정
+    if (teamMode === 2) {
+      // 2팀 모드 균형 조정
+      while (Math.abs(teamA.length - teamB.length) > 1) {
+        if (teamA.length > teamB.length) {
+          // A팀에서 B팀으로 이동
+          const movedPlayer = teamA.pop();
+          teamB.push(movedPlayer);
+        } else {
+          // B팀에서 A팀으로 이동
+          const movedPlayer = teamB.pop();
+          teamA.push(movedPlayer);
+        }
+      }
+    } else {
+      // 3팀 모드 균형 조정
+      const totalPlayers = teamA.length + teamB.length + teamC.length;
+      const targetPerTeam = Math.floor(totalPlayers / 3);
+      const remainder = totalPlayers % 3;
+      
+      // 각 팀의 목표 인원 설정
+      const targets = [targetPerTeam, targetPerTeam, targetPerTeam];
+      for (let i = 0; i < remainder; i++) {
+        targets[i]++;
+      }
+      
+      // 팀 인원 조정
+      const teams = [teamA, teamB, teamC];
+      const teamNames = ['A', 'B', 'C'];
+      
+      // 가장 많은 팀에서 가장 적은 팀으로 이동
+      while (true) {
+        const lengths = teams.map(team => team.length);
+        const maxIndex = lengths.indexOf(Math.max(...lengths));
+        const minIndex = lengths.indexOf(Math.min(...lengths));
+        
+        if (lengths[maxIndex] - lengths[minIndex] <= 1) break;
+        
+        const movedPlayer = teams[maxIndex].pop();
+        teams[minIndex].push(movedPlayer);
+      }
+    }
 
     // 최종적으로 섞기
     setTeamA(shuffleArray(teamA));
@@ -541,11 +633,12 @@ function TeamDivider() {
                           <div key={index} className="mb-2 d-flex align-items-center">
                             <div className="flex-grow-1">
                               <strong>{member.name}</strong>
-                              {member.position && (
-                                <span className="badge bg-secondary ms-2">{member.position}</span>
-                              )}
-                              {member.detailPosition && (
-                                <span className="badge bg-light text-dark ms-1">{member.detailPosition}</span>
+                              {member.detailPosition ? (
+                                <span className={`badge ${getDetailPositionColor(member.detailPosition)} ms-2`}>
+                                  {member.detailPosition}
+                                </span>
+                              ) : (
+                                <span className="badge bg-secondary ms-2">-</span>
                               )}
                             </div>
                           </div>
@@ -573,11 +666,12 @@ function TeamDivider() {
                           <div key={index} className="mb-2 d-flex align-items-center">
                             <div className="flex-grow-1">
                               <strong>{member.name}</strong>
-                              {member.position && (
-                                <span className="badge bg-secondary ms-2">{member.position}</span>
-                              )}
-                              {member.detailPosition && (
-                                <span className="badge bg-light text-dark ms-1">{member.detailPosition}</span>
+                              {member.detailPosition ? (
+                                <span className={`badge ${getDetailPositionColor(member.detailPosition)} ms-2`}>
+                                  {member.detailPosition}
+                                </span>
+                              ) : (
+                                <span className="badge bg-secondary ms-2">-</span>
                               )}
                             </div>
                           </div>
@@ -606,11 +700,12 @@ function TeamDivider() {
                             <div key={index} className="mb-2 d-flex align-items-center">
                               <div className="flex-grow-1">
                                 <strong>{member.name}</strong>
-                                {member.position && (
-                                  <span className="badge bg-secondary ms-2">{member.position}</span>
-                                )}
-                                {member.detailPosition && (
-                                  <span className="badge bg-light text-dark ms-1">{member.detailPosition}</span>
+                                {member.detailPosition ? (
+                                  <span className={`badge ${getDetailPositionColor(member.detailPosition)} ms-2`}>
+                                    {member.detailPosition}
+                                  </span>
+                                ) : (
+                                  <span className="badge bg-secondary ms-2">-</span>
                                 )}
                               </div>
                             </div>
@@ -677,10 +772,15 @@ function TeamDivider() {
                               <span className="badge bg-success me-2">{index + 1}</span>
                               <div>
                                 <div className="fw-bold">{member.name || member}</div>
-                                {(member.position || member.detailPosition) && (
+                                {member.detailPosition ? (
                                   <small className="text-muted">
-                                    {member.position && <span className="badge bg-info me-1">{member.position}</span>}
-                                    {member.detailPosition && <span className="badge bg-secondary">{member.detailPosition}</span>}
+                                    <span className={`badge ${getDetailPositionColor(member.detailPosition)}`}>
+                                      {member.detailPosition}
+                                    </span>
+                                  </small>
+                                ) : (
+                                  <small className="text-muted">
+                                    <span className="badge bg-secondary">-</span>
                                   </small>
                                 )}
                               </div>
@@ -760,10 +860,15 @@ function TeamDivider() {
                               <span className="badge bg-primary me-2">{index + 1}</span>
                               <div>
                                 <div className="fw-bold">{member.name || member}</div>
-                                {(member.position || member.detailPosition) && (
+                                {member.detailPosition ? (
                                   <small className="text-muted">
-                                    {member.position && <span className="badge bg-info me-1">{member.position}</span>}
-                                    {member.detailPosition && <span className="badge bg-secondary">{member.detailPosition}</span>}
+                                    <span className={`badge ${getDetailPositionColor(member.detailPosition)}`}>
+                                      {member.detailPosition}
+                                    </span>
+                                  </small>
+                                ) : (
+                                  <small className="text-muted">
+                                    <span className="badge bg-secondary">-</span>
                                   </small>
                                 )}
                               </div>
@@ -844,10 +949,15 @@ function TeamDivider() {
                                 <span className="badge bg-warning me-2">{index + 1}</span>
                                 <div>
                                   <div className="fw-bold">{member.name || member}</div>
-                                  {(member.position || member.detailPosition) && (
+                                  {member.detailPosition ? (
                                     <small className="text-muted">
-                                      {member.position && <span className="badge bg-info me-1">{member.position}</span>}
-                                      {member.detailPosition && <span className="badge bg-secondary">{member.detailPosition}</span>}
+                                      <span className={`badge ${getDetailPositionColor(member.detailPosition)}`}>
+                                        {member.detailPosition}
+                                      </span>
+                                    </small>
+                                  ) : (
+                                    <small className="text-muted">
+                                      <span className="badge bg-secondary">-</span>
                                     </small>
                                   )}
                                 </div>

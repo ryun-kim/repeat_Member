@@ -3,12 +3,15 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs, onSnapshot, query, where, getDocs as getDocsQuery, deleteDoc, doc, updateDoc } from "firebase/firestore";
 
 function CalendarView({ isAdmin = false }) {
+  const navigate = useNavigate();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showEventActionModal, setShowEventActionModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [eventColor, setEventColor] = useState("#007bff");
@@ -112,8 +115,6 @@ function CalendarView({ isAdmin = false }) {
 
       await addDoc(collection(db, "events"), eventData);
       
-      // 성공 메시지
-      alert(`"${eventTitle}" 모임이 ${selectedDate}에 성공적으로 생성되었습니다!`);
       
       // 모달 닫기 및 입력 필드 초기화
       setShowCreateModal(false);
@@ -132,23 +133,50 @@ function CalendarView({ isAdmin = false }) {
   // 이벤트 클릭 핸들러
   const handleEventClick = (info) => {
     setSelectedEvent(info.event);
-    fetchAttendanceData(info.event.id);
+    setShowEventActionModal(true);
+  };
+
+  // 참석 관리로 이동
+  const handleAttendanceManagement = () => {
+    fetchAttendanceData(selectedEvent.id);
+    setShowEventActionModal(false);
     setShowAttendanceModal(true);
   };
 
+  // 팀 나누기로 이동
+  const handleTeamDivision = () => {
+    const eventData = {
+      id: selectedEvent.id,
+      title: selectedEvent.title,
+      date: selectedEvent.startStr
+    };
+    navigate('/teams', { state: { selectedEvent: eventData } });
+  };
+
+  // 매치 결과로 이동
+  const handleMatchResult = () => {
+    const eventData = {
+      id: selectedEvent.id,
+      title: selectedEvent.title,
+      date: selectedEvent.startStr
+    };
+    navigate('/matchResult', { state: { selectedEvent: eventData } });
+  };
+
   // 참석/불참석 선택
-  const handleAttendanceSubmit = async (status) => {
-    if (!selectedEvent || !selectedMember) {
+  const handleAttendanceSubmit = async (status, memberName = null) => {
+    const targetMember = memberName || selectedMember;
+    if (!selectedEvent || !targetMember) {
       alert("회원을 선택해주세요.");
       return;
     }
 
     // 이미 등록된 회원인지 확인
     const existingAttendance = attendanceData.find(
-      attendance => attendance.memberName === selectedMember
+      attendance => attendance.memberName === targetMember
     );
     if (existingAttendance) {
-      alert(`${selectedMember}님은 이미 참석 등록되어 있습니다.`);
+      alert(`${targetMember}님은 이미 참석 등록되어 있습니다.`);
       return;
     }
 
@@ -157,7 +185,7 @@ function CalendarView({ isAdmin = false }) {
         eventId: selectedEvent.id,
         eventTitle: selectedEvent.title,
         eventDate: selectedEvent.startStr,
-        memberName: selectedMember,
+        memberName: targetMember,
         status: status,
         createdAt: new Date().toISOString()
       });
@@ -172,10 +200,6 @@ function CalendarView({ isAdmin = false }) {
 
   // 참석 기록 삭제
   const handleDeleteAttendance = async (attendanceId, memberName) => {
-    if (!window.confirm(`${memberName}님의 참석 기록을 삭제하시겠습니까?`)) {
-      return;
-    }
-
     try {
       await deleteDoc(doc(db, "attendance", attendanceId));
       fetchAttendanceData(selectedEvent.id); // 목록 새로고침
@@ -384,85 +408,106 @@ function CalendarView({ isAdmin = false }) {
                   <p><strong>날짜:</strong> {selectedEvent.startStr}</p>
                 </div>
                 
-                <div className="mb-4">
-                  
-                  <div className="mb-3">
-                    <label className="form-label">회원 선택</label>
-                    <select
-                      className="form-select"
-                      value={selectedMember}
-                      onChange={(e) => setSelectedMember(e.target.value)}
-                    >
-                      <option value="">회원을 선택하세요</option>
-                      {members.map((member) => (
-                        <option key={member.nm} value={member.name}>
-                          {member.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <button
-                      className="btn btn-success"
-                      onClick={() => handleAttendanceSubmit("참석")}
-                      disabled={!selectedMember}
-                    >
-                      ✅ 참석
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleAttendanceSubmit("불참석")}
-                      disabled={!selectedMember}
-                    >
-                      ❌ 불참석
-                    </button>
-                  </div>
-                </div>
 
                 <div>
-                  <h6>참석 현황</h6>
-                  {attendanceData.length > 0 ? (
-                    <div className="table-responsive">
-                      <table className="table table-sm">
-                        <thead>
-                          <tr>
-                            <th>이름</th>
-                            <th>상태</th>
-                            <th>등록일</th>
-                            <th>관리</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {attendanceData.map((attendance) => (
-                            <tr key={attendance.id}>
-                              <td>{attendance.memberName}</td>
-                              <td>
-                                <span 
-                                  className={`badge ${attendance.status === '참석' ? 'bg-success' : 'bg-danger'}`}
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={() => handleToggleAttendanceStatus(attendance.id, attendance.memberName, attendance.status)}
-                                  title="클릭하여 상태 변경"
-                                >
-                                  {attendance.status}
-                                </span>
-                              </td>
-                              <td>{new Date(attendance.createdAt).toLocaleDateString()}</td>
-                              <td>
-                                <button
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => handleDeleteAttendance(attendance.id, attendance.memberName)}
-                                  title="참석 기록 삭제"
-                                >
-                                  ✕
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  {/* 참석 인원 */}
+                  <h6 className="text-success">✅ 참석 인원 ({attendanceData.filter(a => a.status === '참석').length}명)</h6>
+                  {attendanceData.filter(a => a.status === '참석').length > 0 ? (
+                    <div className="row mb-3">
+                      {attendanceData.filter(a => a.status === '참석').map((attendance) => (
+                        <div key={attendance.id} className="col-md-4 mb-2">
+                          <div className="card border-success">
+                            <div className="card-body p-2">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div className="d-flex align-items-center">
+                                  <strong className="me-2">{attendance.memberName}</strong>
+                                </div>
+                                <div className="d-flex align-items-center">
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDeleteAttendance(attendance.id, attendance.memberName)}
+                                    title="참석 기록 삭제"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <p className="text-muted">아직 참석 등록이 없습니다.</p>
+                    <p className="text-muted mb-3">참석한 인원이 없습니다.</p>
+                  )}
+
+                  {/* 불참 인원 */}
+                  <h6 className="text-danger">❌ 불참 인원 ({attendanceData.filter(a => a.status === '불참석').length}명)</h6>
+                  {attendanceData.filter(a => a.status === '불참석').length > 0 ? (
+                    <div className="row mb-3">
+                      {attendanceData.filter(a => a.status === '불참석').map((attendance) => (
+                        <div key={attendance.id} className="col-md-4 mb-2">
+                          <div className="card border-danger">
+                            <div className="card-body p-2">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div className="d-flex align-items-center">
+                                  <strong className="me-2">{attendance.memberName}</strong>
+                                </div>
+                                <div className="d-flex align-items-center">
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDeleteAttendance(attendance.id, attendance.memberName)}
+                                    title="참석 기록 삭제"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted mb-3">불참한 인원이 없습니다.</p>
+                  )}
+
+                  {/* 미투표 인원 */}
+                  <h6 className="text-warning">⏳ 미투표 인원 ({members.filter(m => !attendanceData.some(a => a.memberName === m.name)).length}명)</h6>
+                  {members.filter(m => !attendanceData.some(a => a.memberName === m.name)).length > 0 ? (
+                    <div className="row">
+                      {members.filter(m => !attendanceData.some(a => a.memberName === m.name)).map((member) => (
+                        <div key={member.nm} className="col-md-4 mb-2">
+                          <div className="card border-warning">
+                            <div className="card-body p-2">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div className="d-flex align-items-center">
+                                  <strong className="me-2">{member.name}</strong>
+                                </div>
+                                <div className="d-flex align-items-center">
+                                  <button
+                                    className="btn btn-sm btn-success me-1"
+                                    onClick={() => handleAttendanceSubmit("참석", member.name)}
+                                    title="참석으로 등록"
+                                  >
+                                    참석
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => handleAttendanceSubmit("불참석", member.name)}
+                                    title="불참으로 등록"
+                                  >
+                                    불참
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted">모든 회원이 투표했습니다.</p>
                   )}
                 </div>
               </div>
@@ -486,6 +531,55 @@ function CalendarView({ isAdmin = false }) {
                   }}
                 >
                   닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이벤트 액션 선택 모달 */}
+      {showEventActionModal && selectedEvent && (
+        <div
+          className="modal show d-block"
+          tabIndex="-1"
+          style={{ background: "rgba(0,0,0,0.3)" }}
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">📅 {selectedEvent.title}</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setShowEventActionModal(false);
+                    setSelectedEvent(null);
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p><strong>날짜:</strong> {selectedEvent.startStr}</p>
+                <p className="text-muted">이 모임에 대해 어떤 작업을 하시겠습니까?</p>
+              </div>
+              <div className="modal-footer d-flex justify-content-center gap-2">
+                <button
+                  className="btn btn-info"
+                  onClick={handleAttendanceManagement}
+                >
+                  👥 참석 관리
+                </button>
+                <button
+                  className="btn btn-success"
+                  onClick={handleTeamDivision}
+                >
+                  🏀 팀 나누기
+                </button>
+                <button
+                  className="btn btn-warning"
+                  onClick={handleMatchResult}
+                >
+                  📊 매치 결과
                 </button>
               </div>
             </div>

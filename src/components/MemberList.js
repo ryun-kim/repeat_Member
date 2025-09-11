@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function MemberList() {
   const [members, setMembers] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [attendanceData, setAttendanceData] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
@@ -18,7 +20,7 @@ function MemberList() {
     winningSeries: 0,
     position: "",
     detailPosition: "",
-    recentGames: ["", "", "", ""] // 최근 4경기 기록 (W/L)
+    recentGames: ["", "", "", "", ""] // 최근 5경기 기록 (W/L)
   });
 
   // 회원 목록 가져오기 함수
@@ -38,7 +40,7 @@ function MemberList() {
           winningSeries: data.winningSeries || 0,
           position: data.position || "",
           detailPosition: data.detailPosition || "",
-          recentGames: data.recentGames || ["", "", "", ""],
+          recentGames: data.recentGames || ["", "", "", "", ""],
         });
       });
       setMembers(memberArr);
@@ -47,14 +49,89 @@ function MemberList() {
     }
   };
 
+  // 이벤트 목록 가져오기 함수
+  const fetchEvents = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "events"));
+      const eventList = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        eventList.push({
+          id: doc.id,
+          title: data.title,
+          date: data.date,
+          color: data.color || "#007bff"
+        });
+      });
+      setEvents(eventList);
+    } catch (error) {
+      console.error("이벤트 목록 가져오기 오류:", error);
+    }
+  };
+
+  // 참석 데이터 가져오기 함수
+  const fetchAttendance = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "attendance"));
+      const attendanceList = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        attendanceList.push({
+          id: doc.id,
+          eventId: data.eventId,
+          memberName: data.memberName,
+          status: data.status,
+          createdAt: data.createdAt
+        });
+      });
+      setAttendanceData(attendanceList);
+    } catch (error) {
+      console.error("참석 데이터 가져오기 오류:", error);
+    }
+  };
+
   useEffect(() => {
     fetchMembers();
+    fetchEvents();
+    fetchAttendance();
   }, []);
 
   // 승률 계산 함수
   const getWinRate = (wins, losses) => {
     const total = wins + losses;
     return total > 0 ? ((wins / total) * 100).toFixed(2) + "%" : "0%";
+  };
+
+  // 참석률 계산 함수 (지나간 모임만 기준)
+  const getAttendanceRate = (memberName) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 오늘 00:00:00으로 설정
+    
+    // 지나간 모임만 필터링
+    const pastEvents = events.filter(event => {
+      const eventDate = new Date(event.date);
+      eventDate.setHours(0, 0, 0, 0); // 이벤트 날짜 00:00:00으로 설정
+      return eventDate < today;
+    });
+
+    if (pastEvents.length === 0) return 0;
+
+    // 지나간 모임 중에서 참석한 모임 수 계산
+    const attendedEvents = pastEvents.filter(event => {
+      const attendance = attendanceData.find(
+        a => a.eventId === event.id && a.memberName === memberName && a.status === "참석"
+      );
+      return attendance !== undefined;
+    }).length;
+
+    return Math.round((attendedEvents / pastEvents.length) * 100);
+  };
+
+  // 참석률에 따른 색깔 클래스
+  const getAttendanceRateColor = (rate) => {
+    if (rate >= 80) return "text-success";
+    if (rate >= 60) return "text-warning";
+    return "text-danger";
   };
 
   // 정렬 함수
@@ -74,8 +151,46 @@ function MemberList() {
           const bWinRate = b.wins + b.losses > 0 ? (b.wins / (b.wins + b.losses)) : 0;
           return bWinRate - aWinRate;
         });
+      case 'attendanceRate':
+        return sortedMembers.sort((a, b) => {
+          const aAttendanceRate = getAttendanceRate(a.name);
+          const bAttendanceRate = getAttendanceRate(b.name);
+          return bAttendanceRate - aAttendanceRate;
+        });
       default:
         return sortedMembers;
+    }
+  };
+
+  // 포지션별 색상 반환 함수
+  const getPositionColor = (position) => {
+    switch (position) {
+      case '가드':
+        return 'bg-success'; // 초록색
+      case '포워드':
+        return 'bg-primary'; // 파란색
+      case '센터':
+        return 'bg-danger'; // 빨간색
+      default:
+        return 'bg-secondary';
+    }
+  };
+
+  // 상세 포지션별 색상 반환 함수
+  const getDetailPositionColor = (detailPosition) => {
+    switch (detailPosition) {
+      case 'PG':
+        return 'bg-success'; // 초록색
+      case 'SG':
+        return 'bg-warning'; // 노란색
+      case 'SF':
+        return 'bg-primary'; // 파란색
+      case 'PF':
+        return 'bg-purple'; // 보라색 (커스텀 클래스 필요)
+      case 'C':
+        return 'bg-danger'; // 빨간색
+      default:
+        return 'bg-secondary';
     }
   };
 
@@ -105,7 +220,7 @@ function MemberList() {
       winningSeries: 0,
       position: "",
       detailPosition: "",
-      recentGames: ["", "", "", ""]
+      recentGames: ["", "", "", "", ""]
     });
   };
 
@@ -180,7 +295,7 @@ function MemberList() {
       winningSeries: member.winningSeries,
       position: member.position,
       detailPosition: member.detailPosition,
-      recentGames: member.recentGames || ["", "", "", ""]
+      recentGames: member.recentGames || ["", "", "", "", ""]
     });
     setShowEditModal(true);
   };
@@ -203,6 +318,7 @@ function MemberList() {
               <option value="wins">승리순</option>
               <option value="losses">패배순</option>
               <option value="winRate">승률순</option>
+              <option value="attendanceRate">참석률순</option>
             </select>
           </div>
           <button 
@@ -217,44 +333,60 @@ function MemberList() {
         </div>
       </div>
       
+      <div className="alert alert-info mb-3">
+        <small>
+          <strong>참석률 기준:</strong> 지나간 모임만을 기준으로 계산됩니다. 
+          (오늘 이전의 모임 중 참석한 모임 수 ÷ 지나간 모임 총 수 × 100)
+        </small>
+      </div>
+      
       <div className="table-responsive">
         <table className="table table-bordered table-hover">
           <thead className="table-primary">
             <tr>
-              <th>이름(아이디)</th>
-              <th>생년월일</th>
-              <th>포지션</th>
-              <th>승</th>
-              <th>패</th>
-              <th>승률</th>
-              <th>최근 성적</th>
-              <th>위닝 시리즈</th>
-              <th>관리</th>
+              <th className="text-center">이름(아이디)</th>
+              <th className="text-center">생년월일</th>
+              <th className="text-center">포지션</th>
+              <th className="text-center">승</th>
+              <th className="text-center">패</th>
+              <th className="text-center">승률</th>
+              <th className="text-center">참석률</th>
+              <th className="text-center">최근 성적</th>
+              <th className="text-center" style={{ width: '150px' }}>위닝 시리즈</th>
+              <th className="text-center">관리</th>
             </tr>
           </thead>
           <tbody>
             {sortMembers(members, sortBy).map(member => (
               <tr key={member.nm}>
-                <td>{member.name}</td>
-                <td>{member.birth}</td>
-                <td>
-                  <span className="badge bg-info me-1">{member.position || '-'}</span>
-                  {member.detailPosition && (
-                    <span className="badge bg-secondary">{member.detailPosition}</span>
+                <td className="text-center">{member.name}</td>
+                <td className="text-center">{member.birth}</td>
+                <td className="text-center">
+                  {member.detailPosition ? (
+                    <span className={`badge ${getDetailPositionColor(member.detailPosition)}`}>
+                      {member.detailPosition}
+                    </span>
+                  ) : (
+                    <span className="badge bg-secondary">-</span>
                   )}
                 </td>
-                <td>{member.wins}</td>
-                <td>{member.losses}</td>
-                <td>{getWinRate(member.wins, member.losses)}</td>
-                <td>
+                <td className="text-center">{member.wins}</td>
+                <td className="text-center">{member.losses}</td>
+                <td className="text-center">{getWinRate(member.wins, member.losses)}</td>
+                <td className="text-center">
+                  <span className={`fw-bold ${getAttendanceRateColor(getAttendanceRate(member.name))}`}>
+                    {getAttendanceRate(member.name)}%
+                  </span>
+                </td>
+                <td className="text-center">
                   {renderRecentGames(member.recentGames)}
                 </td>
-                <td>
+                <td className="text-center">
                   <span className={`badge ${member.winningSeries > 0 ? 'bg-warning' : 'bg-secondary'}`}>
                     {member.winningSeries}승
                   </span>
                 </td>
-                <td>
+                <td className="text-center">
                   <button 
                     className="btn btn-sm btn-outline-primary"
                     onClick={() => openEditModal(member)}
@@ -392,9 +524,9 @@ function MemberList() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">최근 4경기 기록</label>
+                  <label className="form-label">최근 5경기 기록</label>
                   <div className="row">
-                    {[0, 1, 2, 3].map((index) => (
+                    {[0, 1, 2, 3, 4].map((index) => (
                       <div key={index} className="col-2 mb-2">
                         <select
                           className="form-select form-select-sm"
@@ -542,9 +674,9 @@ function MemberList() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">최근 4경기 기록</label>
+                  <label className="form-label">최근 5경기 기록</label>
                   <div className="row">
-                    {[0, 1, 2, 3].map((index) => (
+                    {[0, 1, 2, 3, 4].map((index) => (
                       <div key={index} className="col-2 mb-2">
                         <select
                           className="form-select form-select-sm"

@@ -24,7 +24,7 @@ function MemberView() {
           winningSeries: data.winningSeries || 0,
           position: data.position || "",
           detailPosition: data.detailPosition || "",
-          recentGames: data.recentGames || ["", "", "", ""],
+          recentGames: data.recentGames || ["", "", "", "", ""],
         });
         });
         setMembers(memberArr);
@@ -63,6 +63,38 @@ function MemberView() {
     }
   };
 
+  // 포지션별 색상 반환 함수
+  const getPositionColor = (position) => {
+    switch (position) {
+      case '가드':
+        return 'bg-success'; // 초록색
+      case '포워드':
+        return 'bg-primary'; // 파란색
+      case '센터':
+        return 'bg-danger'; // 빨간색
+      default:
+        return 'bg-secondary';
+    }
+  };
+
+  // 상세 포지션별 색상 반환 함수
+  const getDetailPositionColor = (detailPosition) => {
+    switch (detailPosition) {
+      case 'PG':
+        return 'bg-success'; // 초록색
+      case 'SG':
+        return 'bg-warning'; // 노란색
+      case 'SF':
+        return 'bg-primary'; // 파란색
+      case 'PF':
+        return 'bg-purple'; // 보라색
+      case 'C':
+        return 'bg-danger'; // 빨간색
+      default:
+        return 'bg-secondary';
+    }
+  };
+
   // 최근 5경기 기록 표시 함수
   const renderRecentGames = (recentGames) => {
     return recentGames.map((game, index) => {
@@ -98,9 +130,7 @@ function MemberView() {
               <option value="winRate">승률순</option>
             </select>
           </div>
-          <div className="text-muted">
-            <small>조회 전용 - 관리자 모드에서 수정 가능</small>
-          </div>
+          
         </div>
       </div>
       
@@ -108,32 +138,35 @@ function MemberView() {
         <table className="table table-bordered table-hover">
           <thead className="table-primary">
             <tr>
-              <th>이름(아이디)</th>
-              <th>포지션</th>
-              <th>승</th>
-              <th>패</th>
-              <th>승률</th>
-              <th>최근 성적</th>
-              <th>위닝 시리즈</th>
+              <th className="text-center">이름(아이디)</th>
+              <th className="text-center">포지션</th>
+              <th className="text-center">승</th>
+              <th className="text-center">패</th>
+              <th className="text-center">승률</th>
+              <th className="text-center">최근 성적</th>
+              <th className="text-center" style={{ width: '150px' }}>위닝 시리즈</th>
             </tr>
           </thead>
           <tbody>
             {sortMembers(members, sortBy).map(member => (
               <tr key={member.nm}>
-                <td>{member.name}</td>
-                <td>
-                  <span className="badge bg-info me-1">{member.position || '-'}</span>
-                  {member.detailPosition && (
-                    <span className="badge bg-secondary">{member.detailPosition}</span>
+                <td className="text-center">{member.name}</td>
+                <td className="text-center">
+                  {member.detailPosition ? (
+                    <span className={`badge ${getDetailPositionColor(member.detailPosition)}`}>
+                      {member.detailPosition}
+                    </span>
+                  ) : (
+                    <span className="badge bg-secondary">-</span>
                   )}
                 </td>
-                <td>{member.wins}</td>
-                <td>{member.losses}</td>
-                <td>{getWinRate(member.wins, member.losses)}</td>
-                <td>
+                <td className="text-center">{member.wins}</td>
+                <td className="text-center">{member.losses}</td>
+                <td className="text-center">{getWinRate(member.wins, member.losses)}</td>
+                <td className="text-center">
                   {renderRecentGames(member.recentGames)}
                 </td>
-                <td>
+                <td className="text-center">
                   <span className={`badge ${member.winningSeries > 0 ? 'bg-warning' : 'bg-secondary'}`}>
                     {member.winningSeries}승
                   </span>

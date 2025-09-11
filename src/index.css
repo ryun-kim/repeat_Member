@@ -11,3 +11,9 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* 커스텀 보라색 배지 */
+.bg-purple {
+  background-color: #6f42c1 !important;
+  color: white;
+}
