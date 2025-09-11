@@ -20,14 +20,14 @@ function Header({ isAdmin, toggleAdmin, handleLogout }) {
             <Link to="/members" className="btn btn-outline-light mx-1">회원목록</Link>
             <Link to="/teams" className="btn btn-outline-light mx-1">팀 나누기</Link>
             <Link to="/matchResult" className="btn btn-outline-light mx-1">매치 결과</Link>
-            {isAdmin && <Link to="/admin" className="btn btn-outline-warning mx-1">관리자</Link>}
+            {isAdmin && <Link to="/admin" className="btn btn-outline-warning mx-1">🔧 관리자 관리</Link>}
             
             <button 
               className={`btn mx-1 ${isAdmin ? 'btn-warning' : 'btn-outline-light'}`}
               onClick={isAdmin ? handleLogout : toggleAdmin}
-              title={isAdmin ? '관리자 모드 해제' : '관리자 모드'}
+              title={isAdmin ? '관리자 로그아웃' : '관리자 로그인'}
             >
-              {isAdmin ? '🔧 관리자' : '👤 일반'}
+              {isAdmin ? '🔧 관리자 로그아웃' : '🔑 관리자 로그인'}
             </button>
           </div>
         </div>

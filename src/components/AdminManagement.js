@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { addAdmin, getAdminList } from "../setupAdmin";
+import { addAdmin, getAdminList, changeAdminPassword, deleteAdmin } from "../setupAdmin";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function AdminManagement() {
   const [adminList, setAdminList] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [newAdmin, setNewAdmin] = useState({ username: "", password: "", role: "admin" });
+  const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -56,6 +59,72 @@ function AdminManagement() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 비밀번호 변경
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!passwordData.currentPassword || !passwordData.newPassword) {
+      setMessage("현재 비밀번호와 새 비밀번호를 모두 입력해주세요.");
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    if (passwordData.newPassword.length < 4) {
+      setMessage("새 비밀번호는 4자 이상이어야 합니다.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await changeAdminPassword(selectedAdmin.username, passwordData.currentPassword, passwordData.newPassword);
+      if (result.success) {
+        setMessage("비밀번호가 변경되었습니다.");
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setShowPasswordForm(false);
+        setSelectedAdmin(null);
+      } else {
+        setMessage(result.message);
+      }
+    } catch (error) {
+      console.error("비밀번호 변경 오류:", error);
+      setMessage("비밀번호 변경 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 관리자 삭제
+  const handleDeleteAdmin = async (username) => {
+    if (!window.confirm(`정말로 관리자 '${username}'을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await deleteAdmin(username);
+      if (result.success) {
+        setMessage("관리자가 삭제되었습니다.");
+        loadAdminList(); // 목록 새로고침
+      } else {
+        setMessage(result.message);
+      }
+    } catch (error) {
+      console.error("관리자 삭제 오류:", error);
+      setMessage("관리자 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 비밀번호 변경 폼 열기
+  const openPasswordForm = (admin) => {
+    setSelectedAdmin(admin);
+    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setShowPasswordForm(true);
+    setMessage("");
   };
 
   const formatDate = (date) => {
@@ -152,6 +221,75 @@ function AdminManagement() {
             </div>
           )}
 
+          {showPasswordForm && selectedAdmin && (
+            <div className="card mb-4">
+              <div className="card-body">
+                <h5 className="card-title">비밀번호 변경 - {selectedAdmin.username}</h5>
+                <form onSubmit={handleChangePassword}>
+                  <div className="row">
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">현재 비밀번호</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          value={passwordData.currentPassword}
+                          onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                          placeholder="현재 비밀번호"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">새 비밀번호</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                          placeholder="새 비밀번호 (4자 이상)"
+                          required
+                          minLength="4"
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">새 비밀번호 확인</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                          placeholder="새 비밀번호 확인"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button type="submit" className="btn btn-warning" disabled={isLoading}>
+                      {isLoading ? "변경 중..." : "비밀번호 변경"}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setShowPasswordForm(false);
+                        setSelectedAdmin(null);
+                        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+                        setMessage("");
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           <div className="table-responsive">
             <table className="table table-striped">
               <thead>
@@ -160,12 +298,13 @@ function AdminManagement() {
                   <th>권한</th>
                   <th>생성일</th>
                   <th>마지막 로그인</th>
+                  <th>액션</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan="4" className="text-center">
+                    <td colSpan="5" className="text-center">
                       <div className="spinner-border" role="status">
                         <span className="visually-hidden">로딩 중...</span>
                       </div>
@@ -173,7 +312,7 @@ function AdminManagement() {
                   </tr>
                 ) : adminList.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="text-center">관리자가 없습니다.</td>
+                    <td colSpan="5" className="text-center">관리자가 없습니다.</td>
                   </tr>
                 ) : (
                   adminList.map((admin) => (
@@ -186,6 +325,26 @@ function AdminManagement() {
                       </td>
                       <td>{formatDate(admin.createdAt)}</td>
                       <td>{formatDate(admin.lastLogin)}</td>
+                      <td>
+                        <div className="btn-group" role="group">
+                          <button
+                            className="btn btn-sm btn-outline-warning"
+                            onClick={() => openPasswordForm(admin)}
+                            title="비밀번호 변경"
+                            disabled={isLoading}
+                          >
+                            🔑
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleDeleteAdmin(admin.username)}
+                            title="관리자 삭제"
+                            disabled={isLoading}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}

@@ -87,6 +87,48 @@ export const addAdmin = async (username, password, role = "admin") => {
   }
 };
 
+// 관리자 비밀번호 변경 함수
+export const changeAdminPassword = async (username, currentPassword, newPassword) => {
+  try {
+    const adminRef = doc(db, "admins", username);
+    const adminSnap = await getDoc(adminRef);
+    
+    if (!adminSnap.exists()) {
+      return { success: false, message: "존재하지 않는 관리자입니다." };
+    }
+    
+    const adminData = adminSnap.data();
+    if (adminData.password !== currentPassword) {
+      return { success: false, message: "현재 비밀번호가 올바르지 않습니다." };
+    }
+    
+    await setDoc(adminRef, {
+      ...adminData,
+      password: newPassword,
+      updatedAt: new Date()
+    }, { merge: true });
+    
+    return { success: true, message: "비밀번호가 변경되었습니다." };
+  } catch (error) {
+    console.error("비밀번호 변경 중 오류:", error);
+    return { success: false, message: "비밀번호 변경 중 오류가 발생했습니다." };
+  }
+};
+
+// 관리자 삭제 함수
+export const deleteAdmin = async (username) => {
+  try {
+    const { deleteDoc } = await import("firebase/firestore");
+    const adminRef = doc(db, "admins", username);
+    await deleteDoc(adminRef);
+    
+    return { success: true, message: "관리자가 삭제되었습니다." };
+  } catch (error) {
+    console.error("관리자 삭제 중 오류:", error);
+    return { success: false, message: "관리자 삭제 중 오류가 발생했습니다." };
+  }
+};
+
 // 관리자 목록 조회 함수
 export const getAdminList = async () => {
   try {
@@ -102,7 +144,8 @@ export const getAdminList = async () => {
         username: data.username,
         role: data.role,
         createdAt: data.createdAt,
-        lastLogin: data.lastLogin
+        lastLogin: data.lastLogin,
+        updatedAt: data.updatedAt
       });
     });
     
