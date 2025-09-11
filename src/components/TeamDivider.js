@@ -30,15 +30,14 @@ function TeamDivider() {
           const eventDate = new Date(data.date);
           eventDate.setHours(0, 0, 0, 0); // 이벤트 날짜 00:00:00으로 설정
           
-          // 오늘 날짜 이후의 모임만 포함
-          if (eventDate >= today) {
-            eventList.push({
-              id: doc.id,
-              title: data.title,
-              date: data.date,
-              color: data.color || "#007bff"
-            });
-          }
+          // 모든 모임 포함 (지나간 모임도 포함)
+          eventList.push({
+            id: doc.id,
+            title: data.title,
+            date: data.date,
+            color: data.color || "#007bff",
+            isPast: eventDate < today // 지나간 모임인지 표시
+          });
         });
         // 날짜순으로 정렬
         eventList.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -399,12 +398,15 @@ function TeamDivider() {
                   {events.map((event) => (
                     <div key={event.id} className="col-md-6 col-lg-4 mb-3">
                       <div 
-                        className={`card h-100 cursor-pointer ${selectedEvent?.id === event.id ? 'border-primary' : ''}`}
+                        className={`card h-100 cursor-pointer ${selectedEvent?.id === event.id ? 'border-primary' : ''} ${event.isPast ? 'opacity-75' : ''}`}
                         onClick={() => handleEventSelect(event)}
                         style={{ cursor: 'pointer' }}
                       >
                         <div className="card-body">
-                          <h6 className="card-title">{event.title}</h6>
+                          <h6 className="card-title">
+                            {event.title}
+                            {event.isPast && <span className="badge bg-secondary ms-2">지난 모임</span>}
+                          </h6>
                           <p className="card-text text-muted">
                             {new Date(event.date).toLocaleDateString('ko-KR')}
                           </p>
@@ -450,7 +452,7 @@ function TeamDivider() {
                     <button 
                       className="btn btn-primary btn-lg mb-2"
                       onClick={handleDivideTeams}
-                      disabled={attendanceData.length === 0}
+                      disabled={attendanceData.length === 0 || selectedEvent?.isPast}
                     >
                       팀 나누기
                     </button>
@@ -458,7 +460,7 @@ function TeamDivider() {
                       <button 
                         className="btn btn-outline-secondary btn-sm"
                         onClick={() => shuffleTeam('A')}
-                        disabled={teamA.length === 0}
+                        disabled={teamA.length === 0 || selectedEvent?.isPast}
                         title="A팀 섞기"
                       >
                         A팀 섞기
@@ -466,7 +468,7 @@ function TeamDivider() {
                       <button 
                         className="btn btn-outline-secondary btn-sm"
                         onClick={() => shuffleTeam('B')}
-                        disabled={teamB.length === 0}
+                        disabled={teamB.length === 0 || selectedEvent?.isPast}
                         title="B팀 섞기"
                       >
                         B팀 섞기
@@ -475,7 +477,7 @@ function TeamDivider() {
                         <button 
                           className="btn btn-outline-secondary btn-sm"
                           onClick={() => shuffleTeam('C')}
-                          disabled={teamC.length === 0}
+                          disabled={teamC.length === 0 || selectedEvent?.isPast}
                           title="C팀 섞기"
                         >
                           C팀 섞기
@@ -484,7 +486,7 @@ function TeamDivider() {
                       <button 
                         className="btn btn-outline-danger btn-sm"
                         onClick={resetTeams}
-                        disabled={teamA.length === 0 && teamB.length === 0 && teamC.length === 0}
+                        disabled={(teamA.length === 0 && teamB.length === 0 && teamC.length === 0) || selectedEvent?.isPast}
                         title="선수 목록 초기화"
                       >
                         초기화
@@ -492,12 +494,17 @@ function TeamDivider() {
                       <button 
                         className="btn btn-outline-success btn-sm"
                         onClick={saveTeamConfiguration}
-                        disabled={teamA.length === 0 && teamB.length === 0 && teamC.length === 0}
+                        disabled={(teamA.length === 0 && teamB.length === 0 && teamC.length === 0) || selectedEvent?.isPast}
                         title="팀 구성 저장"
                       >
                         저장
                       </button>
                     </div>
+                    {selectedEvent?.isPast && (
+                      <div className="alert alert-warning mt-2 mb-0 text-center">
+                        <small>지난 모임은 팀 나누기 기능을 사용할 수 없습니다.</small>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

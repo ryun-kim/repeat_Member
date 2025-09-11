@@ -33,14 +33,15 @@ function MatchResult() {
         const q = query(collection(db, "events"));
         const querySnapshot = await getDocs(q);
         const eventsData = querySnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .filter(event => {
-            const eventDate = new Date(event.date);
+          .map(doc => {
+            const data = doc.data();
+            const eventDate = new Date(data.date);
             eventDate.setHours(0, 0, 0, 0);
-            return eventDate >= today;
+            return {
+              id: doc.id,
+              ...data,
+              isPast: eventDate < today // 지나간 모임인지 표시
+            };
           })
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         
@@ -426,7 +427,7 @@ function MatchResult() {
             <option value="">모임을 선택하세요</option>
             {events.map(event => (
               <option key={event.id} value={event.id}>
-                {event.title} ({new Date(event.date).toLocaleDateString()})
+                {event.title} ({new Date(event.date).toLocaleDateString()}){event.isPast ? ' - 지난 모임' : ''}
               </option>
             ))}
           </select>
