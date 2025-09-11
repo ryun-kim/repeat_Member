@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import MemberList from "./components/MemberList";
@@ -6,6 +6,8 @@ import MemberView from "./components/MemberView";
 import CalendarView from "./components/CalendarView";
 import MatchResult from "./components/MatchResult";
 import TeamDivider from "./components/TeamDivider";
+import AdminManagement from "./components/AdminManagement";
+import { setupAdminAccount, authenticateAdmin } from "./setupAdmin";
 
 function Header({ isAdmin, toggleAdmin, handleLogout }) {
   return (
@@ -18,6 +20,7 @@ function Header({ isAdmin, toggleAdmin, handleLogout }) {
             <Link to="/members" className="btn btn-outline-light mx-1">회원목록</Link>
             <Link to="/teams" className="btn btn-outline-light mx-1">팀 나누기</Link>
             <Link to="/matchResult" className="btn btn-outline-light mx-1">매치 결과</Link>
+            {isAdmin && <Link to="/admin" className="btn btn-outline-warning mx-1">관리자</Link>}
             
             <button 
               className={`btn mx-1 ${isAdmin ? 'btn-warning' : 'btn-outline-light'}`}
@@ -71,6 +74,12 @@ function App() {
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginData, setLoginData] = useState({ username: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 앱 시작 시 관리자 계정 설정
+  useEffect(() => {
+    setupAdminAccount();
+  }, []);
 
   const toggleAdmin = () => {
     if (isAdmin) {
@@ -83,15 +92,30 @@ function App() {
     }
   };
 
-  const handleLogin = () => {
-    if (loginData.username === "ryun" && loginData.password === "6260kjr!") {
-      setIsAdmin(true);
-      localStorage.setItem('isAdmin', 'true');
-      setShowLoginModal(false);
-      setLoginData({ username: "", password: "" });
-      alert("관리자 모드로 전환되었습니다.");
-    } else {
-      alert("아이디 또는 비밀번호가 올바르지 않습니다.");
+  const handleLogin = async () => {
+    if (!loginData.username || !loginData.password) {
+      alert("아이디와 비밀번호를 모두 입력해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await authenticateAdmin(loginData.username, loginData.password);
+      
+      if (result.success) {
+        setIsAdmin(true);
+        localStorage.setItem('isAdmin', 'true');
+        setShowLoginModal(false);
+        setLoginData({ username: "", password: "" });
+        alert("관리자 모드로 전환되었습니다.");
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error("로그인 오류:", error);
+      alert("로그인 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -113,6 +137,7 @@ function App() {
         <Route path="/calendar" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><CalendarView isAdmin={isAdmin} /></Layout>} />
         <Route path="/teams" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><TeamDivider /></Layout>} />
         <Route path="/matchResult" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><MatchResult /></Layout>} />
+        <Route path="/admin" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><AdminManagement /></Layout>} />
       </Routes>
 
       {/* 관리자 로그인 모달 */}
@@ -179,8 +204,9 @@ function App() {
                   type="button"
                   className="btn btn-primary"
                   onClick={handleLogin}
+                  disabled={isLoading}
                 >
-                  로그인
+                  {isLoading ? "로그인 중..." : "로그인"}
                 </button>
               </div>
             </div>
