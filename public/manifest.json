@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Repeat Member",
+  "name": "Repeat Member 농구팀 관리",
+  "description": "Repeat Member 농구팀을 위한 회원 관리 및 매치 관리 앱",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,16 +11,24 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#0d6efd",
+  "background_color": "#ffffff",
+  "categories": ["sports", "lifestyle", "utilities"],
+  "lang": "ko",
+  "dir": "ltr",
+  "scope": "/",
+  "id": "repeat-member-app"
 }

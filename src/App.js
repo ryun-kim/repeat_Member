@@ -7,6 +7,7 @@ import CalendarView from "./components/CalendarView";
 import MatchResult from "./components/MatchResult";
 import TeamDivider from "./components/TeamDivider";
 import AdminManagement from "./components/AdminManagement";
+import InstallPrompt from "./components/InstallPrompt";
 import { setupAdminAccount, authenticateAdmin } from "./setupAdmin";
 
 function Header({ isAdmin, toggleAdmin, handleLogout }) {
@@ -213,6 +214,9 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </Router>
   );
 }
