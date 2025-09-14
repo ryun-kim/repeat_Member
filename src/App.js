@@ -8,32 +8,141 @@ import MatchResult from "./components/MatchResult";
 import TeamDivider from "./components/TeamDivider";
 import AdminManagement from "./components/AdminManagement";
 import InstallPrompt from "./components/InstallPrompt";
+import DownloadApp from "./components/DownloadApp";
+import { usePWAInstall } from "./hooks/usePWAInstall";
 import { setupAdminAccount, authenticateAdmin } from "./setupAdmin";
 
 function Header({ isAdmin, toggleAdmin, handleLogout }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isInstallable, isInstalled, installApp } = usePWAInstall();
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
     <header>
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
         <div className="container">
-          <Link className="navbar-brand" to="/">🏀 Repeat Member 농구팀</Link>
-          <div className="d-flex align-items-center">
-            <Link to="/calendar" className="btn btn-outline-light mx-1">달력</Link>
-            <Link to="/members" className="btn btn-outline-light mx-1">회원목록</Link>
-            <Link to="/teams" className="btn btn-outline-light mx-1">팀 나누기</Link>
-            <Link to="/matchResult" className="btn btn-outline-light mx-1">매치 결과</Link>
-            {isAdmin && <Link to="/admin" className="btn btn-outline-warning mx-1">🔧 관리자 관리</Link>}
-            
+          <Link className="navbar-brand d-flex align-items-center" to="/">
+            <img 
+              src="/teamrepeat_logo.png" 
+              alt="Repeat Member" 
+              style={{ height: '30px', marginRight: '8px' }}
+            />
+            Repeat Member
+          </Link>
+          
+          {/* 데스크톱 메뉴 */}
+          <div className="d-none d-lg-flex align-items-center">
+            <Link to="/calendar" className="btn btn-outline-light btn-sm mx-1">📅 달력</Link>
+            <Link to="/members" className="btn btn-outline-light btn-sm mx-1">👥 회원목록</Link>
+            <Link to="/teams" className="btn btn-outline-light btn-sm mx-1">⚖️ 팀 나누기</Link>
+            <Link to="/matchResult" className="btn btn-outline-light btn-sm mx-1">🏆 매치 결과</Link>
+            {isAdmin && <Link to="/admin" className="btn btn-outline-warning btn-sm mx-1">🔧 관리자</Link>}
             <button 
-              className={`btn mx-1 ${isAdmin ? 'btn-warning' : 'btn-outline-light'}`}
+              className={`btn btn-sm mx-1 ${isInstalled ? 'btn-success' : isInstallable ? 'btn-outline-success' : 'btn-outline-info'}`}
+              onClick={installApp}
+              title={isInstalled ? '앱이 설치되었습니다' : isInstallable ? '앱 설치하기' : '앱 설치 방법 보기'}
+            >
+              {isInstalled ? '✅ 설치됨' : isInstallable ? '📱 앱 설치' : '📱 앱'}
+            </button>
+            <button 
+              className={`btn btn-sm mx-1 ${isAdmin ? 'btn-warning' : 'btn-outline-light'}`}
               onClick={isAdmin ? handleLogout : toggleAdmin}
               title={isAdmin ? '관리자 로그아웃' : '관리자 로그인'}
             >
-              {isAdmin ? '🔧 관리자 로그아웃' : '🔑 관리자 로그인'}
+              {isAdmin ? '🔧 로그아웃' : '🔑 로그인'}
             </button>
           </div>
+          
+          {/* 모바일 햄버거 버튼 */}
+          <button 
+            className="mobile-menu-toggle d-lg-none" 
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleMenu();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleMenu();
+            }}
+            aria-expanded={isMenuOpen}
+            aria-label="Toggle navigation"
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'white', 
+              fontSize: '1.5rem',
+              padding: '0.5rem',
+              cursor: 'pointer',
+              zIndex: 1001
+            }}
+          >
+            <span className="hamburger-icon">☰</span>
+          </button>
+          
+          {/* 모바일 메뉴 */}
+          {isMenuOpen && (
+            <div 
+              className="mobile-menu d-lg-none"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: '0',
+                backgroundColor: '#0d6efd',
+                borderRadius: '0 0 8px 8px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                zIndex: 1000,
+                minWidth: '250px',
+                maxWidth: '300px'
+              }}
+            >
+              <div className="mobile-menu-content">
+                <Link to="/calendar" className="mobile-menu-item" onClick={closeMenu}>📅 달력</Link>
+                <Link to="/members" className="mobile-menu-item" onClick={closeMenu}>👥 회원목록</Link>
+                <Link to="/teams" className="mobile-menu-item" onClick={closeMenu}>⚖️ 팀 나누기</Link>
+                <Link to="/matchResult" className="mobile-menu-item" onClick={closeMenu}>🏆 매치 결과</Link>
+                {isAdmin && <Link to="/admin" className="mobile-menu-item" onClick={closeMenu}>🔧 관리자</Link>}
+                
+                <div className="mobile-menu-divider"></div>
+                
+                <button 
+                  className={`mobile-menu-button ${isInstalled ? 'mobile-menu-button-success' : isInstallable ? 'mobile-menu-button-success' : 'mobile-menu-button-info'}`}
+                  onClick={() => {
+                    installApp();
+                    closeMenu();
+                  }}
+                >
+                  {isInstalled ? '✅ 앱 설치됨' : isInstallable ? '📱 앱 설치' : '📱 앱 설치 방법'}
+                </button>
+                
+                <button 
+                  className={`mobile-menu-button ${isAdmin ? 'mobile-menu-button-warning' : 'mobile-menu-button-light'}`}
+                  onClick={() => {
+                    if (isAdmin) {
+                      handleLogout();
+                    } else {
+                      toggleAdmin();
+                    }
+                    closeMenu();
+                  }}
+                >
+                  {isAdmin ? '🔧 로그아웃' : '🔑 로그인'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
-      <div style={{ height: "70px" }}></div>
+      <div className="header-spacer"></div>
     </header>
   );
 }
@@ -41,12 +150,24 @@ function Header({ isAdmin, toggleAdmin, handleLogout }) {
 function Home() {
   return (
     <div className="container mt-5">
-      <div className="row">
+      {/* 메인 로고 섹션 */}
+      <div className="home-logo-section">
+        <img 
+          src="/teamrepeat_logo.png" 
+          alt="Repeat Member 로고" 
+          className="home-logo"
+        />
+        <h1 className="home-title">🏀 Repeat Member</h1>
+        <p className="home-subtitle">농구팀을 위한 회원 관리 및 매치 관리 앱</p>
+      </div>
+      
+      {/* 앱 다운로드 섹션 */}
+      <div className="row mb-4 download-app-section">
         <div className="col-12">
-          <h2 className="mb-4 text-center">🏀 Repeat Member 농구팀</h2>
-          <p className="lead text-center mb-4">팀 Repeat를 위한 공간입니다</p>
+          <DownloadApp />
         </div>
       </div>
+      
       <div className="row">
         <div className="col-12">
           <CalendarView />

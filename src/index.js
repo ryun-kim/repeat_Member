@@ -11,16 +11,24 @@ root.render(
   </React.StrictMode>
 );
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
+// Register Service Worker for PWA (프로덕션에서만)
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('SW registered: ', registration);
+        // Service Worker registered successfully
       })
       .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError);
+        // Service Worker registration failed
       });
+  });
+} else if ('serviceWorker' in navigator && process.env.NODE_ENV === 'development') {
+  // 개발 환경에서는 기존 Service Worker 제거
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      registration.unregister();
+      // Service Worker unregistered for development
+    });
   });
 }
 

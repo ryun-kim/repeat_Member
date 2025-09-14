@@ -19,6 +19,12 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "teamrepeat_logo.png",
+      "type": "image/png",
+      "sizes": "any",
+      "purpose": "any"
     }
   ],
   "start_url": ".",

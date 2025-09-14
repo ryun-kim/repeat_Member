@@ -15,7 +15,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
@@ -23,6 +22,16 @@ self.addEventListener('install', (event) => {
 
 // Fetch event - serve from cache when offline
 self.addEventListener('fetch', (event) => {
+  // WebSocket 요청은 Service Worker가 처리하지 않음
+  if (event.request.url.startsWith('ws://') || event.request.url.startsWith('wss://')) {
+    return;
+  }
+  
+  // 개발 서버의 HMR 요청도 무시
+  if (event.request.url.includes('/ws') || event.request.url.includes('hot-update')) {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -40,7 +49,6 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
