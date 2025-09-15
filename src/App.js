@@ -8,7 +8,6 @@ import MatchResult from "./components/MatchResult";
 import TeamDivider from "./components/TeamDivider";
 import AdminManagement from "./components/AdminManagement";
 import InstallPrompt from "./components/InstallPrompt";
-import DownloadApp from "./components/DownloadApp";
 import { usePWAInstall } from "./hooks/usePWAInstall";
 import { setupAdminAccount, authenticateAdmin } from "./setupAdmin";
 
@@ -147,35 +146,6 @@ function Header({ isAdmin, toggleAdmin, handleLogout }) {
   );
 }
 
-function Home() {
-  return (
-    <div className="container mt-5">
-      {/* 메인 로고 섹션 */}
-      <div className="home-logo-section">
-        <img 
-          src="/teamrepeat_logo.png" 
-          alt="Repeat Member 로고" 
-          className="home-logo"
-        />
-        <h1 className="home-title">🏀 Repeat Member</h1>
-        <p className="home-subtitle">농구팀을 위한 회원 관리 및 매치 관리 앱</p>
-      </div>
-      
-      {/* 앱 다운로드 섹션 */}
-      <div className="row mb-4 download-app-section">
-        <div className="col-12">
-          <DownloadApp />
-        </div>
-      </div>
-      
-      <div className="row">
-        <div className="col-12">
-          <CalendarView />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function Layout({ children, isAdmin, toggleAdmin, handleLogout }) {
   return (
@@ -189,27 +159,26 @@ function Layout({ children, isAdmin, toggleAdmin, handleLogout }) {
 }
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(() => {
-    // localStorage에서 관리자 모드 상태 복원
-    const savedAdminState = localStorage.getItem('isAdmin');
-    return savedAdminState === 'true';
-  });
+  console.log('App component rendering...');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
 
   // 앱 시작 시 관리자 계정 설정
   useEffect(() => {
-    setupAdminAccount();
+    try {
+      setupAdminAccount();
+    } catch (error) {
+      console.error('setupAdminAccount error:', error);
+    }
   }, []);
 
   const toggleAdmin = () => {
     if (isAdmin) {
-      // 관리자 모드 해제
       setIsAdmin(false);
       localStorage.removeItem('isAdmin');
     } else {
-      // 관리자 모드 진입 시 로그인 모달 표시
       setShowLoginModal(true);
     }
   };
