@@ -45,7 +45,7 @@ function MemberList() {
       });
       setMembers(memberArr);
     } catch (error) {
-      console.error("회원 목록 가져오기 오류:", error);
+        // 회원 목록 가져오기 오류는 무시
     }
   };
 
@@ -65,7 +65,7 @@ function MemberList() {
       });
       setEvents(eventList);
     } catch (error) {
-      console.error("이벤트 목록 가져오기 오류:", error);
+        // 이벤트 목록 가져오기 오류는 무시
     }
   };
 
@@ -86,7 +86,7 @@ function MemberList() {
       });
       setAttendanceData(attendanceList);
     } catch (error) {
-      console.error("참석 데이터 가져오기 오류:", error);
+        // 참석 데이터 가져오기 오류는 무시
     }
   };
 
@@ -250,7 +250,7 @@ function MemberList() {
       // 목록 새로고침
       fetchMembers();
     } catch (error) {
-      console.error("회원 추가 중 오류:", error);
+      // 회원 추가 중 오류는 무시
       alert("회원 추가 중 오류가 발생했습니다.");
     }
   };
@@ -278,7 +278,7 @@ function MemberList() {
       // 목록 새로고침
       fetchMembers();
     } catch (error) {
-      console.error("회원 수정 중 오류:", error);
+      // 회원 수정 중 오류는 무시
       alert("회원 수정 중 오류가 발생했습니다.");
     }
   };

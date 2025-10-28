@@ -62,7 +62,7 @@ function CalendarView({ isAdmin = false }) {
         });
         setMembers(memberArr);
       } catch (error) {
-        console.error("회원 목록 가져오기 오류:", error);
+        // 회원 목록 가져오기 오류는 무시
       }
     };
     fetchMembers();
@@ -86,7 +86,7 @@ function CalendarView({ isAdmin = false }) {
       });
       setAttendanceData(attendanceArr);
     } catch (error) {
-      console.error("참석 데이터 가져오기 오류:", error);
+      // 참석 데이터 가져오기 오류는 무시
     }
   };
 
@@ -123,7 +123,7 @@ function CalendarView({ isAdmin = false }) {
       setEventColor("#007bff");
       
     } catch (error) {
-      console.error("모임 생성 중 오류가 발생했습니다:", error);
+      // 모임 생성 중 오류는 무시
       alert("모임 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
@@ -193,7 +193,7 @@ function CalendarView({ isAdmin = false }) {
       setSelectedMember(""); // 선택 초기화
       fetchAttendanceData(selectedEvent.id); // 목록 새로고침
     } catch (error) {
-      console.error("참석 등록 중 오류:", error);
+      // 참석 등록 중 오류는 무시
       alert("참석 등록 중 오류가 발생했습니다.");
     }
   };
@@ -204,7 +204,7 @@ function CalendarView({ isAdmin = false }) {
       await deleteDoc(doc(db, "attendance", attendanceId));
       fetchAttendanceData(selectedEvent.id); // 목록 새로고침
     } catch (error) {
-      console.error("참석 기록 삭제 중 오류:", error);
+      // 참석 기록 삭제 중 오류는 무시
       alert("참석 기록 삭제 중 오류가 발생했습니다.");
     }
   };
@@ -232,7 +232,7 @@ function CalendarView({ isAdmin = false }) {
       
       fetchAttendanceData(selectedEvent.id); // 목록 새로고침
     } catch (error) {
-      console.error("참석 상태 변경 중 오류:", error);
+      // 참석 상태 변경 중 오류는 무시
       alert("참석 상태 변경 중 오류가 발생했습니다.");
     }
   };

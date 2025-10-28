@@ -45,23 +45,11 @@ function MatchResult() {
               isPast: eventDate < today // 지나간 모임인지 표시
             };
           })
-          .filter(event => {
-            const eventDate = new Date(event.date);
-            eventDate.setHours(0, 0, 0, 0);
-            
-            // 한 달 전부터 한 달 후까지의 모임만 포함
-            const oneMonthAgo = new Date(today);
-            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-            const oneMonthFromNow = new Date(today);
-            oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-            
-            return eventDate >= oneMonthAgo && eventDate <= oneMonthFromNow;
-          })
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         
         setEvents(eventsData);
       } catch (error) {
-        console.error("이벤트 가져오기 오류:", error);
+        // 이벤트 가져오기 오류는 무시
       }
     };
 
@@ -79,7 +67,7 @@ function MatchResult() {
         }));
         setMembers(membersData);
       } catch (error) {
-        console.error("회원 목록 가져오기 오류:", error);
+        // 회원 목록 가져오기 오류는 무시
       }
     };
 
@@ -136,7 +124,7 @@ function MatchResult() {
         setTeamC(config.teamC || []);
       }
     } catch (error) {
-      console.error("팀 구성 불러오기 오류:", error);
+      // 팀 구성 불러오기 오류는 무시
     }
   };
 
@@ -158,7 +146,7 @@ function MatchResult() {
         setGameResults([]);
       }
     } catch (error) {
-      console.error("매치 결과 불러오기 오류:", error);
+      // 매치 결과 불러오기 오류는 무시
     }
   };
 
@@ -407,7 +395,7 @@ function MatchResult() {
       setSavedMatchResult(matchResult);
       alert("매치 결과가 저장되었습니다!");
     } catch (error) {
-      console.error("매치 결과 저장 오류:", error);
+      // 매치 결과 저장 오류는 무시
       alert("매치 결과 저장 중 오류가 발생했습니다.");
     }
   };

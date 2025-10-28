@@ -159,7 +159,6 @@ function Layout({ children, isAdmin, toggleAdmin, handleLogout }) {
 }
 
 function App() {
-  console.log('App component rendering...');
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginData, setLoginData] = useState({ username: "", password: "" });
@@ -170,7 +169,7 @@ function App() {
     try {
       setupAdminAccount();
     } catch (error) {
-      console.error('setupAdminAccount error:', error);
+      // 관리자 계정 설정 오류는 무시
     }
   }, []);
 
@@ -203,7 +202,6 @@ function App() {
         alert(result.message);
       }
     } catch (error) {
-      console.error("로그인 오류:", error);
       alert("로그인 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
@@ -226,7 +224,7 @@ function App() {
           </Layout>
         } />
         <Route path="/calendar" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><CalendarView isAdmin={isAdmin} /></Layout>} />
-        <Route path="/teams" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><TeamDivider /></Layout>} />
+        <Route path="/teams" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><TeamDivider isAdmin={isAdmin} /></Layout>} />
         <Route path="/matchResult" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><MatchResult /></Layout>} />
         <Route path="/admin" element={<Layout isAdmin={isAdmin} toggleAdmin={toggleAdmin} handleLogout={handleLogout}><AdminManagement /></Layout>} />
       </Routes>

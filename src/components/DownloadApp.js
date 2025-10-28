@@ -46,9 +46,9 @@ function DownloadApp() {
     const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+      // 사용자가 설치 프롬프트를 수락했습니다
     } else {
-      console.log('User dismissed the install prompt');
+      // 사용자가 설치 프롬프트를 거부했습니다
     }
     
     // Clear the deferredPrompt

@@ -29,7 +29,7 @@ function MemberView() {
         });
         setMembers(memberArr);
       } catch (error) {
-        console.error("회원 목록 가져오기 오류:", error);
+        // 회원 목록 가져오기 오류는 무시
       }
     };
     fetchMembers();

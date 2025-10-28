@@ -49,7 +49,7 @@ function Auth() {
       }
     } catch (err) {
       setError(err.message || JSON.stringify(err));
-      console.error("회원가입/로그인 에러:", err);
+      // 회원가입/로그인 에러는 무시
     }
   };
 

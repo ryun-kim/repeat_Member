@@ -33,7 +33,7 @@ function Record() {
       setWins(result === "win" ? wins + 1 : wins);
       setLosses(result === "loss" ? losses + 1 : losses);
     } catch (error) {
-      console.error(error);
+      // 오류는 무시
     }
   };
 

@@ -23,7 +23,6 @@ function AdminManagement() {
         setMessage("관리자 목록을 불러오는데 실패했습니다: " + result.message);
       }
     } catch (error) {
-      console.error("관리자 목록 로드 오류:", error);
       setMessage("관리자 목록을 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -54,7 +53,6 @@ function AdminManagement() {
         setMessage(result.message);
       }
     } catch (error) {
-      console.error("관리자 추가 오류:", error);
       setMessage("관리자 추가 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
@@ -89,7 +87,6 @@ function AdminManagement() {
         setMessage(result.message);
       }
     } catch (error) {
-      console.error("비밀번호 변경 오류:", error);
       setMessage("비밀번호 변경 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
@@ -112,7 +109,6 @@ function AdminManagement() {
         setMessage(result.message);
       }
     } catch (error) {
-      console.error("관리자 삭제 오류:", error);
       setMessage("관리자 삭제 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);

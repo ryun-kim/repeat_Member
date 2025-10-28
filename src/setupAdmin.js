@@ -17,12 +17,12 @@ export const setupAdminAccount = async () => {
         createdAt: new Date(),
         lastLogin: null
       });
-      console.log("관리자 계정이 생성되었습니다.");
+      // 관리자 계정이 생성되었습니다.
     } else {
-      console.log("관리자 계정이 이미 존재합니다.");
+      // 관리자 계정이 이미 존재합니다.
     }
   } catch (error) {
-    console.error("관리자 계정 설정 중 오류:", error);
+    // 관리자 계정 설정 중 오류는 무시
   }
 };
 
@@ -57,7 +57,6 @@ export const authenticateAdmin = async (username, password) => {
       }
     };
   } catch (error) {
-    console.error("관리자 인증 중 오류:", error);
     return { success: false, message: "인증 중 오류가 발생했습니다." };
   }
 };
@@ -82,7 +81,6 @@ export const addAdmin = async (username, password, role = "admin") => {
     
     return { success: true, message: "관리자가 추가되었습니다." };
   } catch (error) {
-    console.error("관리자 추가 중 오류:", error);
     return { success: false, message: "관리자 추가 중 오류가 발생했습니다." };
   }
 };
@@ -110,7 +108,6 @@ export const changeAdminPassword = async (username, currentPassword, newPassword
     
     return { success: true, message: "비밀번호가 변경되었습니다." };
   } catch (error) {
-    console.error("비밀번호 변경 중 오류:", error);
     return { success: false, message: "비밀번호 변경 중 오류가 발생했습니다." };
   }
 };
@@ -124,7 +121,6 @@ export const deleteAdmin = async (username) => {
     
     return { success: true, message: "관리자가 삭제되었습니다." };
   } catch (error) {
-    console.error("관리자 삭제 중 오류:", error);
     return { success: false, message: "관리자 삭제 중 오류가 발생했습니다." };
   }
 };
@@ -151,7 +147,6 @@ export const getAdminList = async () => {
     
     return { success: true, adminList };
   } catch (error) {
-    console.error("관리자 목록 조회 중 오류:", error);
     return { success: false, message: "관리자 목록 조회 중 오류가 발생했습니다." };
   }
 };
