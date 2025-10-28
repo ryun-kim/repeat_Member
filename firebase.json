@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "build",
+    "public": "build",  // React 빌드 폴더를 public으로 지정 (기본 'public'이 아니어야 함)
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -9,7 +9,27 @@
     "rewrites": [
       {
         "source": "**",
-        "destination": "/index.html"
+        "destination": "/index.html"  // SPA 라우팅을 위해 모든 URL을 index.html로 리다이렉트
+      }
+    ],
+    "headers": [  // 캐싱 문제 해결: Service Worker와 정적 파일 캐시 무효화
+      {
+        "source": "/service-worker.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=0, no-cache, no-store, must-revalidate"
+          }
+        ]
       }
     ]
   }

@@ -2,6 +2,7 @@
   "name": "repeat-member",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://repeatmember.web.app",
   "dependencies": {
     "@fullcalendar/core": "^6.1.19",
     "@fullcalendar/daygrid": "^6.1.19",
